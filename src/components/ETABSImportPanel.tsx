@@ -283,7 +283,18 @@ const ETABSImportPanel: React.FC<Props> = ({
       let mFem: number | null = null;
 
       if (r2d && span > 0) {
-        m2d = interpolateMoment(adjustedStation, span, r2d.Mleft, r2d.Mmid, r2d.Mright);
+        // Use real moment stations from solver if available (accurate for hinged beams)
+        if (r2d.momentStations && r2d.momentStations.length > 2) {
+          const nSt = r2d.momentStations.length - 1;
+          const t = adjustedStation / span;
+          const idx = t * nSt;
+          const i0 = Math.min(Math.floor(idx), nSt - 1);
+          const i1 = i0 + 1;
+          const frac = idx - i0;
+          m2d = r2d.momentStations[i0] * (1 - frac) + r2d.momentStations[i1] * frac;
+        } else {
+          m2d = interpolateMoment(adjustedStation, span, r2d.Mleft, r2d.Mmid, r2d.Mright);
+        }
       }
       if (r3d && span > 0) {
         // Use real moment stations from solver if available
@@ -300,7 +311,17 @@ const ETABSImportPanel: React.FC<Props> = ({
         }
       }
       if (rFem && span > 0) {
-        mFem = interpolateMoment(adjustedStation, span, rFem.Mleft, rFem.Mmid, rFem.Mright);
+        if (rFem.momentStations && rFem.momentStations.length > 2) {
+          const nSt = rFem.momentStations.length - 1;
+          const t = adjustedStation / span;
+          const idx = t * nSt;
+          const i0 = Math.min(Math.floor(idx), nSt - 1);
+          const i1 = i0 + 1;
+          const frac = idx - i0;
+          mFem = rFem.momentStations[i0] * (1 - frac) + rFem.momentStations[i1] * frac;
+        } else {
+          mFem = interpolateMoment(adjustedStation, span, rFem.Mleft, rFem.Mmid, rFem.Mright);
+        }
       }
 
       return {
