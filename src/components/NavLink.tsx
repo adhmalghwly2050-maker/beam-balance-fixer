@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { NavLink as RouterNavLink } from "react-router-dom";
 import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
@@ -13,11 +13,10 @@ interface NavLinkCompatProps {
 const NavLink = forwardRef<HTMLAnchorElement, NavLinkCompatProps>(
   ({ className, activeClassName, to, ...props }, ref) => {
     return (
-      <Link
+      <RouterNavLink
         ref={ref}
         to={to}
-        className={className}
-        activeProps={{ className: cn(className, activeClassName) }}
+        className={({ isActive }) => cn(className, isActive && activeClassName)}
         {...props}
       />
     );

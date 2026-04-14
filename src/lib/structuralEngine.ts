@@ -1078,10 +1078,33 @@ export function analyzeFrame(
       hingeJ: ae.hingeJ,
     }));
 
-    const envelope = msEnvelopeAnalysis(msNodes, msElements, loadCases);
+    const envelope = msEnvelopeAnalysis(msNodes, msElements, loadCases, true);
 
     for (let i = 0; i < n; i++) {
       const er = envelope.elements[i];
+      // Extract momentStations from diagram (20 evenly-spaced stations)
+      let momentStations: number[] | undefined;
+      if (er.diagram && er.diagram.length > 0) {
+        const nSt = 20;
+        const L = frameBeams[i].length;
+        momentStations = new Array(nSt + 1);
+        for (let s = 0; s <= nSt; s++) {
+          const x = (s / nSt) * L;
+          // Find nearest diagram points and interpolate
+          let lo = 0;
+          for (let d = 0; d < er.diagram.length - 1; d++) {
+            if (er.diagram[d + 1].x >= x) { lo = d; break; }
+            lo = d;
+          }
+          const hi = Math.min(lo + 1, er.diagram.length - 1);
+          if (lo === hi || Math.abs(er.diagram[hi].x - er.diagram[lo].x) < 1e-12) {
+            momentStations[s] = er.diagram[lo].moment;
+          } else {
+            const t = (x - er.diagram[lo].x) / (er.diagram[hi].x - er.diagram[lo].x);
+            momentStations[s] = er.diagram[lo].moment * (1 - t) + er.diagram[hi].moment * t;
+          }
+        }
+      }
       results.beams.push({
         beamId: frameBeams[i].id,
         span: frameBeams[i].length,
@@ -1091,6 +1114,7 @@ export function analyzeFrame(
         Vu: Math.max(Math.abs(er.Vleft), Math.abs(er.Vright)),
         Rleft: Math.abs(er.Vleft),
         Rright: Math.abs(er.Vright),
+        momentStations,
       });
     }
   } else {
@@ -1108,10 +1132,32 @@ export function analyzeFrame(
       hingeJ: ae.hingeJ,
     }));
 
-    const envelope = envelopeByMomentDistribution(nodes, mdElements, loadCases);
+    const envelope = envelopeByMomentDistribution(nodes, mdElements, loadCases, true);
 
     for (let i = 0; i < n; i++) {
       const er = envelope.elements[i];
+      // Extract momentStations from diagram (20 evenly-spaced stations)
+      let momentStations: number[] | undefined;
+      if (er.diagram && er.diagram.length > 0) {
+        const nSt = 20;
+        const L = frameBeams[i].length;
+        momentStations = new Array(nSt + 1);
+        for (let s = 0; s <= nSt; s++) {
+          const x = (s / nSt) * L;
+          let lo = 0;
+          for (let d = 0; d < er.diagram.length - 1; d++) {
+            if (er.diagram[d + 1].x >= x) { lo = d; break; }
+            lo = d;
+          }
+          const hi = Math.min(lo + 1, er.diagram.length - 1);
+          if (lo === hi || Math.abs(er.diagram[hi].x - er.diagram[lo].x) < 1e-12) {
+            momentStations[s] = er.diagram[lo].moment;
+          } else {
+            const t = (x - er.diagram[lo].x) / (er.diagram[hi].x - er.diagram[lo].x);
+            momentStations[s] = er.diagram[lo].moment * (1 - t) + er.diagram[hi].moment * t;
+          }
+        }
+      }
       results.beams.push({
         beamId: frameBeams[i].id,
         span: frameBeams[i].length,
@@ -1121,6 +1167,7 @@ export function analyzeFrame(
         Vu: Math.max(Math.abs(er.Vleft), Math.abs(er.Vright)),
         Rleft: Math.abs(er.Vleft),
         Rright: Math.abs(er.Vright),
+        momentStations,
       });
     }
   }
